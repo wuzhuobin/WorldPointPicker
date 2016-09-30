@@ -39,27 +39,27 @@ vtkStandardNewMacro(MouseInteractorStyle);
 
 int main(int, char *[])
 {
-  vtkSmartPointer<vtkSphereSource> sphereSource = 
-    vtkSmartPointer<vtkSphereSource>::New();
-  sphereSource->Update();
-  sphereSource->SetRadius(10);
-  sphereSource->SetPhiResolution(100);
-  sphereSource->SetThetaResolution(100);
+  //vtkSmartPointer<vtkSphereSource> sphereSource = 
+  //  vtkSmartPointer<vtkSphereSource>::New();
+  //sphereSource->Update();
+  //sphereSource->SetRadius(10);
+  //sphereSource->SetPhiResolution(100);
+  //sphereSource->SetThetaResolution(100);
 
-	//std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
+	std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
 
-	//vtkSmartPointer<vtkSTLReader> reader =
-	//	vtkSmartPointer<vtkSTLReader>::New();
-	//reader->SetFileName(inputFileName.c_str());
-	//reader->Update();
+	vtkSmartPointer<vtkSTLReader> reader =
+		vtkSmartPointer<vtkSTLReader>::New();
+	reader->SetFileName(inputFileName.c_str());
+	reader->Update();
 
 
  
   // Create a mapper and actor
   vtkSmartPointer<vtkPolyDataMapper> mapper = 
     vtkSmartPointer<vtkPolyDataMapper>::New();
-  //mapper->SetInputConnection(reader->GetOutputPort());
-  mapper->SetInputConnection(sphereSource->GetOutputPort());
+  mapper->SetInputConnection(reader->GetOutputPort());
+  //mapper->SetInputConnection(sphereSource->GetOutputPort());
   vtkSmartPointer<vtkActor> actor = 
     vtkSmartPointer<vtkActor>::New();
   actor->SetMapper(mapper);
@@ -80,7 +80,7 @@ int main(int, char *[])
   
   // Add the actor to the scene
   renderer->AddActor(actor);
-  renderer->SetBackground(1,1,1); // Background color white
+  renderer->SetBackground(0,0,0); // Background color white
  
   // Render and interact
   renderWindow->Render();

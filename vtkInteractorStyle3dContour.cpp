@@ -10,8 +10,15 @@
 #include <vtkSmartPointer.h>
 #include <vtkDijkstraGraphGeodesicPath.h>
 #include <vtkProperty.h>
-
+#include <vtkConnectivityFilter.h>
+#include <vtkGeometryFilter.h>
 #include <vtkAppendPolyData.h>
+#include <vtkCleanPolyData.h>
+
+#include <vtkProperty2D.h>
+#include <vtkTextProperty.h>
+#include <vtkParametricSpline.h>
+#include <vtkParametricFunctionSource.h>
 
 #include "CutAlongPolyLineFilter.h"
 
@@ -29,21 +36,31 @@ void vtkInteractorStyle3dContour::OnKeyPress()
 {
 	std::string key = this->Interactor->GetKeySym();
 	cout << key << endl;
-	if (key == "Return") {
+	if (key == "A") {
 		DropSpheres();
+		cout << "DropSpheres" << endl;
 	}
-	else if (key == "Escape") {
+	else if (key == "W") {
 		ClearSpheres();
-		ClearLinks();
-		cout << "clear" << endl;
+		//ClearLinks();
+		cout << "ClearSpheres" << endl;
 	}
-	else if (key == "space") {
+	else if (key == "S") {
 		LinkSpheres();
 		cout << "LinkSpheres" << endl;
 	}
-	else if (key == "L") {
+	else if (key == "X") {
+		SmoothLinks();
+		cout << "SmoothLinks" << endl;
+	}
+	else if (key == "D") {
 		CutAlongLinks();
-		cout << "L" << endl;
+		cout << "CutAlongLinks" << endl;
+	}
+	else if (key == "Return") {
+		m_sliderWidget->SetInteractor(this->Interactor);
+		m_sliderWidget->EnabledOn();
+		this->Interactor->Render();
 	}
 
 	AbstractInteractorStyle3D::OnKeyPress();
@@ -51,6 +68,49 @@ void vtkInteractorStyle3dContour::OnKeyPress()
 
 vtkInteractorStyle3dContour::vtkInteractorStyle3dContour()
 {
+
+	vtkSmartPointer<vtkSliderRepresentation2D> sliderRep =
+		vtkSmartPointer<vtkSliderRepresentation2D>::New();
+
+	sliderRep->SetMinimumValue(0.0);
+	sliderRep->SetMaximumValue(30);
+	sliderRep->SetValue(5.0);
+	sliderRep->SetTitleText("Sample Rate");
+
+	// Set color properties:
+	// Change the color of the knob that slides
+	sliderRep->GetSliderProperty()->SetColor(1, 0, 0);//red
+
+													  // Change the color of the text indicating what the slider controls
+	sliderRep->GetTitleProperty()->SetColor(1, 0, 0);//red
+
+													 // Change the color of the text displaying the value
+	sliderRep->GetLabelProperty()->SetColor(1, 0, 0);//red
+
+													 // Change the color of the knob when the mouse is held on it
+	sliderRep->GetSelectedProperty()->SetColor(0, 1, 0);//green
+
+														// Change the color of the bar
+	sliderRep->GetTubeProperty()->SetColor(1, 1, 0);//yellow
+
+													// Change the color of the ends of the bar
+	sliderRep->GetCapProperty()->SetColor(1, 1, 0);//yellow
+
+	sliderRep->GetPoint1Coordinate()->SetCoordinateSystemToDisplay();
+	sliderRep->GetPoint1Coordinate()->SetValue(40, 40);
+	sliderRep->GetPoint2Coordinate()->SetCoordinateSystemToDisplay();
+	sliderRep->GetPoint2Coordinate()->SetValue(200, 40);
+
+	m_sliderWidget =
+		vtkSmartPointer<vtkSliderWidget>::New();
+	m_sliderWidget->SetInteractor(this->Interactor);
+	m_sliderWidget->SetRepresentation(sliderRep);
+	m_sliderWidget->SetAnimationModeToAnimate();
+
+	vtkSmartPointer<vtkSliderCallback> callback =
+		vtkSmartPointer<vtkSliderCallback>::New();
+	callback->style = this;
+	m_sliderWidget->AddObserver(vtkCommand::InteractionEvent, callback);
 }
 
 
@@ -105,6 +165,7 @@ void vtkInteractorStyle3dContour::DropSpheres()
 	vtkSmartPointer<vtkActor> actor =
 		vtkSmartPointer<vtkActor>::New();
 	actor->SetMapper(mapper);
+	actor->GetProperty()->SetColor(0, 0, 1);
 
 	// useless
 	actor->PickableOff();
@@ -135,7 +196,7 @@ void vtkInteractorStyle3dContour::LinkSpheres()
 {
 	ClearLinks();
 
-	if (m_mainActor == nullptr) {
+	if (m_mainActor == nullptr || m_sphereCenterPointIds.size() < 2 ) {
 		return;
 	}
 	//Append the multi links
@@ -184,10 +245,22 @@ void vtkInteractorStyle3dContour::LinkSpheres()
 		appendFilter->AddInputConnection(dijkstra->GetOutputPort());
 	}
 	appendFilter->Update();
+
+	//// Write the file
+	//vtkSmartPointer<vtkXMLPolyDataWriter> writer =
+	//	vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	//writer->SetFileName("test.vtp");
+	//writer->SetInputData(appendFilter->GetOutput());
+	//writer->Write();
+
+
+
+
 	vtkSmartPointer<vtkPolyDataMapper> linkMapper =
 		vtkSmartPointer<vtkPolyDataMapper>::New();
 	linkMapper->SetInputConnection(appendFilter->GetOutputPort());
 	linkMapper->Update();
+
 
 	m_linkActorAppended =
 		vtkSmartPointer<vtkActor>::New();
@@ -222,4 +295,79 @@ void vtkInteractorStyle3dContour::CutAlongLinks()
 	}
 	vtkSmartPointer<CutAlongPolyLineFilter> cutter = 
 		vtkSmartPointer<CutAlongPolyLineFilter>::New();
+
+	cutter->SetInputData(0, m_mainActor->GetMapper()->GetInput());
+	cutter->SetInputData(1, m_linkActorAppended->GetMapper()->GetInput());
+	cutter->SetClipTolerance(0.5);
+	cutter->Update();
+
+	vtkSmartPointer<vtkConnectivityFilter> conn = vtkSmartPointer<vtkConnectivityFilter>::New();
+	conn->SetInputConnection(cutter->GetOutputPort());
+	conn->ColorRegionsOn();
+	conn->SetExtractionModeToAllRegions();
+	conn->Update();
+
+	vtkSmartPointer<vtkGeometryFilter> geom = vtkSmartPointer<vtkGeometryFilter>::New();
+	geom->SetInputConnection(conn->GetOutputPort());
+	geom->Update();
+
+	this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->RemoveActor(m_mainActor);
+
+	m_mainActor = vtkSmartPointer<vtkActor>::New();
+	m_mainActor->SetMapper(vtkSmartPointer<vtkPolyDataMapper>::New());
+	m_mainActor->GetMapper()->SetInputConnection(geom->GetOutputPort());
+	m_mainActor->GetMapper()->Update();
+	this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(m_mainActor);
+
+	
+	this->Interactor->Render();
+}
+
+void vtkInteractorStyle3dContour::SmoothLinks()
+{
+	if (m_mainActor == nullptr || m_sphereCenterPointIds.size() < 2) {
+		return;
+	}
+	if (m_linkActorAppendedDownSampled == nullptr) {
+		m_linkActorAppendedDownSampled =
+			vtkSmartPointer<vtkActor>::New();
+		m_linkActorAppendedDownSampled->SetMapper(vtkSmartPointer<vtkPolyDataMapper>::New());
+		m_linkActorAppendedDownSampled->GetProperty()->SetColor(0, 1, 0); // Green
+		m_linkActorAppendedDownSampled->GetProperty()->SetLineWidth(4);
+		this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(m_linkActorAppendedDownSampled);
+	}
+
+	// Remove any duplicate points.
+	vtkSmartPointer<vtkCleanPolyData> cleanFilter =
+		vtkSmartPointer<vtkCleanPolyData>::New();
+	cleanFilter->SetInputData(m_linkActorAppended->GetMapper()->GetInput());
+	cleanFilter->ToleranceIsAbsoluteOn();
+	cleanFilter->SetAbsoluteTolerance(m_clearFilterTolerance);
+	cleanFilter->Update();
+
+	// Write the file
+	vtkSmartPointer<vtkXMLPolyDataWriter> writer =
+		vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	writer->SetFileName("before.vtp");
+	writer->SetInputData(cleanFilter->GetOutput());
+	writer->Write();
+
+	vtkSmartPointer<vtkParametricSpline> spline =
+		vtkSmartPointer<vtkParametricSpline>::New();
+	spline->SetPoints(cleanFilter->GetOutput()->GetPoints());
+
+	vtkSmartPointer<vtkParametricFunctionSource> functionSource =
+		vtkSmartPointer<vtkParametricFunctionSource>::New();
+	functionSource->SetParametricFunction(spline);
+	functionSource->Update();
+
+	writer->SetFileName("after.vtp");
+	writer->SetInputData(functionSource->GetOutput());
+	writer->Write();
+
+	m_linkActorAppendedDownSampled->GetMapper()->SetInputConnection(functionSource->GetOutputPort());
+	m_linkActorAppendedDownSampled->GetMapper()->Update();
+	this->Interactor->Render();
+
+
 }
