@@ -46,7 +46,9 @@ int main(int, char *[])
   //sphereSource->SetPhiResolution(100);
   //sphereSource->SetThetaResolution(100);
 
-	std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
+	//std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
+	std::string inputFileName = "C:\\Users\\jieji\\Desktop\\ccode\\WorldPointPicker\\shimingzhong.stl";
+
 
 	vtkSmartPointer<vtkSTLReader> reader =
 		vtkSmartPointer<vtkSTLReader>::New();

@@ -43,7 +43,7 @@ CutAlongPolyLineFilter::CutAlongPolyLineFilter()
 CutAlongPolyLineFilter::~CutAlongPolyLineFilter()
 {
 }
-
+#include <vtkXMLPolyDataWriter.h>
 int CutAlongPolyLineFilter::RequestData(vtkInformation* vtkNotUsed(request), vtkInformationVector ** inputVector, vtkInformationVector * outputVector)
 {
 	vtkInformation* inInfo0 = inputVector[0]->GetInformationObject(0);
@@ -75,6 +75,22 @@ int CutAlongPolyLineFilter::RequestData(vtkInformation* vtkNotUsed(request), vtk
 	tubeTri->Update();
 	dataTri->SetInputData(inputPD);
 	dataTri->Update();
+
+	// Write the file
+	vtkSmartPointer<vtkXMLPolyDataWriter> writer =
+		vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	writer->SetFileName("test.vtp");
+#if VTK_MAJOR_VERSION <= 5
+	writer->SetInput(polydata);
+#else
+	writer->SetInputData(polydata);
+#endif
+
+	// Optional - set the mode. The default is binary.
+	//writer->SetDataModeToBinary();
+	//writer->SetDataModeToAscii();
+
+	writer->Write();
 
 	vtkSmartPointer<vtkImplicitPolyDataDistance> clipFunc = vtkSmartPointer<vtkImplicitPolyDataDistance>::New();
 	clipFunc->SetInput(tubeTri->GetOutput());

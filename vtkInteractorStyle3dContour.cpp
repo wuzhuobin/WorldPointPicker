@@ -17,8 +17,12 @@
 
 #include <vtkProperty2D.h>
 #include <vtkTextProperty.h>
+
+
+#include <vtkSplineFilter.h>
 #include <vtkParametricSpline.h>
 #include <vtkParametricFunctionSource.h>
+#include <vtkKochanekSpline.h>
 
 #include "CutAlongPolyLineFilter.h"
 
@@ -297,7 +301,7 @@ void vtkInteractorStyle3dContour::CutAlongLinks()
 		vtkSmartPointer<CutAlongPolyLineFilter>::New();
 
 	cutter->SetInputData(0, m_mainActor->GetMapper()->GetInput());
-	cutter->SetInputData(1, m_linkActorAppended->GetMapper()->GetInput());
+	cutter->SetInputData(1, m_linkActorAppendedDownSampled->GetMapper()->GetInput());
 	cutter->SetClipTolerance(0.5);
 	cutter->Update();
 
@@ -345,27 +349,13 @@ void vtkInteractorStyle3dContour::SmoothLinks()
 	cleanFilter->SetAbsoluteTolerance(m_clearFilterTolerance);
 	cleanFilter->Update();
 
-	// Write the file
-	vtkSmartPointer<vtkXMLPolyDataWriter> writer =
-		vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-	writer->SetFileName("before.vtp");
-	writer->SetInputData(cleanFilter->GetOutput());
-	writer->Write();
 
-	vtkSmartPointer<vtkParametricSpline> spline =
-		vtkSmartPointer<vtkParametricSpline>::New();
-	spline->SetPoints(cleanFilter->GetOutput()->GetPoints());
+	vtkSmartPointer<vtkSplineFilter> sf =
+		vtkSmartPointer<vtkSplineFilter>::New();
+	sf->SetInputConnection(cleanFilter->GetOutputPort());
+	sf->Update();
 
-	vtkSmartPointer<vtkParametricFunctionSource> functionSource =
-		vtkSmartPointer<vtkParametricFunctionSource>::New();
-	functionSource->SetParametricFunction(spline);
-	functionSource->Update();
-
-	writer->SetFileName("after.vtp");
-	writer->SetInputData(functionSource->GetOutput());
-	writer->Write();
-
-	m_linkActorAppendedDownSampled->GetMapper()->SetInputConnection(functionSource->GetOutputPort());
+	m_linkActorAppendedDownSampled->GetMapper()->SetInputConnection(sf->GetOutputPort());
 	m_linkActorAppendedDownSampled->GetMapper()->Update();
 	this->Interactor->Render();
 
