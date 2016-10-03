@@ -61,13 +61,20 @@ void vtkInteractorStyle3dContour::OnKeyPress()
 		CutAlongLinks();
 		cout << "CutAlongLinks" << endl;
 	}
+	else if (key == "E") {
+		if (m_linkActorAppendedDownSampled != nullptr) {
+			this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->RemoveActor(m_linkActorAppendedDownSampled);
+		}
+
+		cout << "Remove smoothLInks" << endl;
+	}
 	else if (key == "Return") {
 		m_sliderWidget->SetInteractor(this->Interactor);
 		m_sliderWidget->EnabledOn();
 		this->Interactor->Render();
 	}
 
-	AbstractInteractorStyle3D::OnKeyPress();
+	//AbstractInteractorStyle3D::OnKeyPress();
 }
 
 vtkInteractorStyle3dContour::vtkInteractorStyle3dContour()
@@ -207,6 +214,7 @@ void vtkInteractorStyle3dContour::LinkSpheres()
 	vtkSmartPointer<vtkAppendPolyData> appendFilter =
 		vtkSmartPointer<vtkAppendPolyData>::New();
 
+
 	for (list<vtkIdType>::const_iterator cit1 = m_sphereCenterPointIds.cbegin(), cit2 = ++m_sphereCenterPointIds.cbegin();
 		cit1 != (m_sphereCenterPointIds.cend()); ++cit1, ++cit2) {
 		cout << "sphere center id: " << *cit1 << endl;
@@ -302,13 +310,14 @@ void vtkInteractorStyle3dContour::CutAlongLinks()
 
 	cutter->SetInputData(0, m_mainActor->GetMapper()->GetInput());
 	cutter->SetInputData(1, m_linkActorAppendedDownSampled->GetMapper()->GetInput());
-	cutter->SetClipTolerance(0.5);
+	cutter->SetClipTolerance(0.1);
 	cutter->Update();
 
 	vtkSmartPointer<vtkConnectivityFilter> conn = vtkSmartPointer<vtkConnectivityFilter>::New();
 	conn->SetInputConnection(cutter->GetOutputPort());
 	conn->ColorRegionsOn();
-	conn->SetExtractionModeToAllRegions();
+	//conn->SetExtractionModeToAllRegions();
+	conn->SetExtractionModeToLargestRegion();
 	conn->Update();
 
 	vtkSmartPointer<vtkGeometryFilter> geom = vtkSmartPointer<vtkGeometryFilter>::New();
@@ -338,8 +347,8 @@ void vtkInteractorStyle3dContour::SmoothLinks()
 		m_linkActorAppendedDownSampled->SetMapper(vtkSmartPointer<vtkPolyDataMapper>::New());
 		m_linkActorAppendedDownSampled->GetProperty()->SetColor(0, 1, 0); // Green
 		m_linkActorAppendedDownSampled->GetProperty()->SetLineWidth(4);
-		this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(m_linkActorAppendedDownSampled);
 	}
+	this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(m_linkActorAppendedDownSampled);
 
 	// Remove any duplicate points.
 	vtkSmartPointer<vtkCleanPolyData> cleanFilter =

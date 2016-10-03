@@ -23,6 +23,7 @@ set(
   AbstractInteractorStyle.cxx
   AbstractInteractorStyle3D.cxx
   vtkInteractorStyle3dContour.cpp
+  vtkInteractorStyle3dContour2.cpp
 )
 
 set(
@@ -30,6 +31,8 @@ set(
   AbstractInteractorStyle.h
   AbstractInteractorStyle3D.h
   vtkInteractorStyle3dContour.h
+  vtkInteractorStyle3dContour2.h
+  
 )
 
 add_subdirectory(CutAlongPolylineFilter)

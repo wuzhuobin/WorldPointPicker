@@ -11,6 +11,7 @@
 #include <vtkSTLReader.h>
 
 #include "vtkInteractorStyle3dContour.h"
+#include "vtkInteractorStyle3dContour2.h"
 
 // Define interaction style
 class MouseInteractorStyle : public vtkInteractorStyleTrackballCamera
@@ -46,8 +47,8 @@ int main(int, char *[])
   //sphereSource->SetPhiResolution(100);
   //sphereSource->SetThetaResolution(100);
 
-	//std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
-	std::string inputFileName = "C:\\Users\\jieji\\Desktop\\ccode\\WorldPointPicker\\shimingzhong.stl";
+	std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
+	//std::string inputFileName = "C:\\Users\\jieji\\Desktop\\ccode\\WorldPointPicker\\shimingzhong.stl";
 
 
 	vtkSmartPointer<vtkSTLReader> reader =
@@ -76,9 +77,9 @@ int main(int, char *[])
     vtkSmartPointer<vtkRenderWindowInteractor>::New();
   renderWindowInteractor->SetRenderWindow(renderWindow);
   
-  vtkSmartPointer<vtkInteractorStyle3dContour> style =
-    vtkSmartPointer<vtkInteractorStyle3dContour>::New();
-  renderWindowInteractor->SetInteractorStyle( style );
+
+  //renderWindowInteractor->SetInteractorStyle(vtkSmartPointer<vtkInteractorStyle3dContour>::New());
+  renderWindowInteractor->SetInteractorStyle(vtkSmartPointer<vtkInteractorStyle3dContour2>::New());
   
   // Add the actor to the scene
   renderer->AddActor(actor);
