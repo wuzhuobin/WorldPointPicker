@@ -40,15 +40,15 @@ vtkStandardNewMacro(MouseInteractorStyle);
 
 int main(int, char *[])
 {
-  //vtkSmartPointer<vtkSphereSource> sphereSource = 
-  //  vtkSmartPointer<vtkSphereSource>::New();
-  //sphereSource->Update();
-  //sphereSource->SetRadius(10);
-  //sphereSource->SetPhiResolution(100);
-  //sphereSource->SetThetaResolution(100);
+  vtkSmartPointer<vtkSphereSource> sphereSource = 
+    vtkSmartPointer<vtkSphereSource>::New();
+  sphereSource->Update();
+  sphereSource->SetRadius(10);
+  sphereSource->SetPhiResolution(100);
+  sphereSource->SetThetaResolution(100);
 
-	std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
-	//std::string inputFileName = "C:\\Users\\jieji\\Desktop\\ccode\\WorldPointPicker\\shimingzhong.stl";
+	//std::string inputFileName = "C:\\Users\\user\\Desktop\\shimingzhong.stl";
+	std::string inputFileName = "C:\\Users\\jieji\\Desktop\\ccode\\WorldPointPicker\\shimingzhong.stl";
 
 
 	vtkSmartPointer<vtkSTLReader> reader =

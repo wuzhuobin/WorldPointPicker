@@ -9,8 +9,10 @@
 #include <vtkRendererCollection.h>
 #include <vtkMapper.h>
 #include <vtkPolyDataConnectivityFilter.h>
-#include <vtkGeometryFilter.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkCleanPolyData.h>
+
+#include <vtkXMLPolydataWriter.h>
 
 #include "CutAlongPolyLineFilter.h"
 
@@ -60,7 +62,6 @@ void vtkInteractorStyle3dContour2::EnableContourWidget(bool flag)
 	}
 	this->Interactor->Render();
 }
-#include <vtkXMLPolydataWriter.h>
 void vtkInteractorStyle3dContour2::CutAlongLinks()
 {
 	if (m_mainActor == nullptr || m_contourWidgetRep == nullptr) {
@@ -78,39 +79,24 @@ void vtkInteractorStyle3dContour2::CutAlongLinks()
 		vtkSmartPointer<vtkPolyDataConnectivityFilter >::New();
 	conn->SetInputConnection(cutter->GetOutputPort());
 	conn->ColorRegionsOn();
-	//conn->SetExtractionModeToAllRegions();
-	conn->SetExtractionModeToLargestRegion();
-	conn->DeleteSpecifiedRegion(1);
+	conn->SetExtractionModeToAllRegions();
+	//conn->SetExtractionModeToLargestRegion();
 	conn->Update();
 
-	// Write the file
-	vtkSmartPointer<vtkXMLPolyDataWriter> writer =
-		vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-	writer->SetFileName("test.vtp");
-#if VTK_MAJOR_VERSION <= 5
-	writer->SetInput(polydata);
-#else
-	writer->SetInputData(conn->GetOutput());
-#endif
+	vtkSmartPointer<vtkCleanPolyData> cleaner =
+		vtkSmartPointer<vtkCleanPolyData>::New();
+	cleaner->SetInputData(conn->GetOutput());
+	cleaner->PointMergingOff();
+	cleaner->Update();
 
-	// Optional - set the mode. The default is binary.
-	//writer->SetDataModeToBinary();
-	//writer->SetDataModeToAscii();
-
-	writer->Write();
-
-	//vtkSmartPointer<vtkGeometryFilter> geom = vtkSmartPointer<vtkGeometryFilter>::New();
-	//geom->SetInputConnection(conn->GetOutputPort());
-	//geom->Update();
 
 	this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->RemoveActor(m_mainActor);
 
 	m_mainActor = vtkSmartPointer<vtkActor>::New();
 	m_mainActor->SetMapper(vtkSmartPointer<vtkPolyDataMapper>::New());
-	m_mainActor->GetMapper()->SetInputConnection(conn->GetOutputPort());
+	m_mainActor->GetMapper()->SetInputConnection(cleaner->GetOutputPort());
 	m_mainActor->GetMapper()->Update();
 	this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()->AddActor(m_mainActor);
-
 
 	this->Interactor->Render();
 }
@@ -120,29 +106,49 @@ void vtkInteractorStyle3dContour2::OnKeyPress()
 	cout << key << endl;
 	if (key == "D") {
 		EnableContourWidget(false);
+		m_mainActor = nullptr;
 		//ClearLinks();
-		cout << "EnableContourWidget" << endl;
+		cout << "EnableContourWidget false" << endl;
 	}
 	else if (key == "F") {
 		CutAlongLinks();
 		cout << "CutAlongLinks" << endl;
 	}
-}
-
-void vtkInteractorStyle3dContour2::OnLeftButtonDown()
-{
-	// set the m_mainActor by the first click
-	if (m_mainActor == nullptr) {
+	else if (key == "A") {
+		// set the m_mainActor by the first click
 		vtkSmartPointer<vtkPropPicker> propPicker = vtkSmartPointer<vtkPropPicker>::New();
 		propPicker->Pick(this->Interactor->GetEventPosition()[0],
 			this->Interactor->GetEventPosition()[1],
 			0,  // always zero.
 			this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
 		m_mainActor = propPicker->GetActor();
+		EnableContourWidget(true);
 	}
+	else if (key == "S") {
+
+		
+		// Write the file
+		vtkSmartPointer<vtkXMLPolyDataWriter> writer =
+			vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+		writer->SetFileName("test.vtp");
+#if VTK_MAJOR_VERSION <= 5
+		writer->SetInput(polydata);
+#else
+		writer->SetInputData(m_contourWidgetRep->GetContourRepresentationAsPolyData());
+#endif
+
+		// Optional - set the mode. The default is binary.
+		//writer->SetDataModeToBinary();
+		//writer->SetDataModeToAscii();
+
+		writer->Write();
+	}
+}
+
+void vtkInteractorStyle3dContour2::OnLeftButtonDown()
+{
 
 	AbstractInteractorStyle3D::OnLeftButtonDown();
-	EnableContourWidget(true);
 }
 
 vtkInteractorStyle3dContour2::vtkInteractorStyle3dContour2()

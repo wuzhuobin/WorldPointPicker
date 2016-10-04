@@ -23,6 +23,7 @@ Copyright (C) 2016
 #include <vtkTriangleFilter.h>
 #include <vtkClipPolyData.h>
 #include <vtkImplicitPolyDataDistance.h>
+
 #include "CutAlongPolyLineFilter.h"
 
 vtkStandardNewMacro(CutAlongPolyLineFilter);
@@ -79,7 +80,7 @@ int CutAlongPolyLineFilter::RequestData(vtkInformation* vtkNotUsed(request), vtk
 
 	vtkSmartPointer<vtkImplicitPolyDataDistance> clipFunc = vtkSmartPointer<vtkImplicitPolyDataDistance>::New();
 	clipFunc->SetInput(tubeTri->GetOutput());
-	clipFunc->SetTolerance(0.1);
+	//clipFunc->SetTolerance(0.1);
 	
 	vtkSmartPointer<vtkClipPolyData> clipper = vtkSmartPointer<vtkClipPolyData>::New();
 	clipper->SetInputConnection(dataTri->GetOutputPort());
