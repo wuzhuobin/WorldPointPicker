@@ -13,11 +13,14 @@ SET(
 	CUT_ALONG_POLYLINE_FILTER_SRC 
 	${CMAKE_CURRENT_SOURCE_DIR}/CutAlongPolyLineFilter.cxx
 	${CMAKE_CURRENT_SOURCE_DIR}/CutAlongPolyLineFilter2.cxx
+	${CMAKE_CURRENT_SOURCE_DIR}/vtkLoopedTubeFilter.cxx
 	)
 SET(
 	CUT_ALONG_POLYLINE_FILTER_INC
 	 ${CMAKE_CURRENT_SOURCE_DIR}/CutAlongPolyLineFilter.h
 	 ${CMAKE_CURRENT_SOURCE_DIR}/CutAlongPolyLineFilter2.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vtkLoopedTubeFilter.h
+	 
 	 )
 
 add_library(CutAlongPolyLineFilter 	

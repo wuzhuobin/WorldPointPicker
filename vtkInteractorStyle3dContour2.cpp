@@ -1,3 +1,9 @@
+/*
+Author: LHS
+Occupation: 
+
+*/
+
 #include "vtkInteractorStyle3dContour2.h"
 
 #include <vtkProperty.h>
@@ -58,7 +64,8 @@ void vtkInteractorStyle3dContour2::EnableContourWidget(bool flag)
 		}
 		m_contourWidget->EnabledOn();
 		m_contourWidget->On();
-		m_contourWidget->Initialize();
+		m_contourWidget->Initialize(NULL, vtkContourWidget::Define);
+
 	}
 	this->Interactor->Render();
 }
@@ -72,7 +79,7 @@ void vtkInteractorStyle3dContour2::CutAlongLinks()
 
 	cutter->SetInputData(0, m_mainActor->GetMapper()->GetInput());
 	cutter->SetInputData(1, m_contourWidgetRep->GetContourRepresentationAsPolyData());
-	cutter->SetClipTolerance(0.1);
+	cutter->SetClipTolerance(0.5);
 	cutter->Update();
 
 	vtkSmartPointer<vtkPolyDataConnectivityFilter > conn =
@@ -130,7 +137,7 @@ void vtkInteractorStyle3dContour2::OnKeyPress()
 		// Write the file
 		vtkSmartPointer<vtkXMLPolyDataWriter> writer =
 			vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-		writer->SetFileName("test.vtp");
+		writer->SetFileName("line.vtp");
 #if VTK_MAJOR_VERSION <= 5
 		writer->SetInput(polydata);
 #else

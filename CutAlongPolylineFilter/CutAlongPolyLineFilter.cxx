@@ -19,11 +19,12 @@ Copyright (C) 2016
 #include <vtkInformationVector.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkDataObject.h>
-#include <vtkTubeFilter.h>
 #include <vtkTriangleFilter.h>
 #include <vtkClipPolyData.h>
 #include <vtkImplicitPolyDataDistance.h>
+#include <vtkCleanPolyData.h>
 
+#include "vtkLoopedTubeFilter.h"
 #include "CutAlongPolyLineFilter.h"
 
 vtkStandardNewMacro(CutAlongPolyLineFilter);
@@ -44,7 +45,7 @@ CutAlongPolyLineFilter::CutAlongPolyLineFilter()
 CutAlongPolyLineFilter::~CutAlongPolyLineFilter()
 {
 }
-
+#include <vtkXMLPolyDataWriter.h>
 int CutAlongPolyLineFilter::RequestData(vtkInformation* vtkNotUsed(request), vtkInformationVector ** inputVector, vtkInformationVector * outputVector)
 {
 	vtkInformation* inInfo0 = inputVector[0]->GetInformationObject(0);
@@ -60,14 +61,34 @@ int CutAlongPolyLineFilter::RequestData(vtkInformation* vtkNotUsed(request), vtk
 	vtkPolyData* outputPD = vtkPolyData::SafeDownCast(
 		outPolyDataInfo->Get(vtkDataObject::DATA_OBJECT()));
 
+	vtkSmartPointer<vtkCleanPolyData> cleaner = vtkSmartPointer<vtkCleanPolyData>::New();
+	cleaner->SetInputData(cutLine);
+	cleaner->SetTolerance(0.01);
+	cleaner->Update();
 
 	// create a tube around the line
-	vtkSmartPointer<vtkTubeFilter> tubefilter = vtkSmartPointer<vtkTubeFilter>::New();
-	tubefilter->SetInputData(cutLine);
+	vtkSmartPointer<vtkLoopedTubeFilter> tubefilter = vtkSmartPointer<vtkLoopedTubeFilter>::New();
+	tubefilter->SetInputConnection(cleaner->GetOutputPort());
 	tubefilter->SetCapping(0);
 	tubefilter->SetNumberOfSides(10);
 	tubefilter->SetRadius(this->ClipTolerance);
 	tubefilter->Update();
+
+	// Write the file
+	vtkSmartPointer<vtkXMLPolyDataWriter> writer =
+		vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+	writer->SetFileName("test.vtp");
+#if VTK_MAJOR_VERSION <= 5
+	writer->SetInput(polydata);
+#else
+	writer->SetInputData(tubefilter->GetOutput());
+#endif
+
+	// Optional - set the mode. The default is binary.
+	//writer->SetDataModeToBinary();
+	//writer->SetDataModeToAscii();
+
+	writer->Write();
 
 	// push pds through triangle filters
 	vtkSmartPointer<vtkTriangleFilter> tubeTri = vtkSmartPointer<vtkTriangleFilter>::New();
@@ -80,7 +101,7 @@ int CutAlongPolyLineFilter::RequestData(vtkInformation* vtkNotUsed(request), vtk
 
 	vtkSmartPointer<vtkImplicitPolyDataDistance> clipFunc = vtkSmartPointer<vtkImplicitPolyDataDistance>::New();
 	clipFunc->SetInput(tubeTri->GetOutput());
-	//clipFunc->SetTolerance(0.1);
+	clipFunc->SetTolerance(0.1);
 	
 	vtkSmartPointer<vtkClipPolyData> clipper = vtkSmartPointer<vtkClipPolyData>::New();
 	clipper->SetInputConnection(dataTri->GetOutputPort());
